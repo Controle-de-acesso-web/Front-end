@@ -1,9 +1,6 @@
-import { View, Text } from 'react-native';
+// app/index.tsx
+import { Redirect } from 'expo-router';
 
-export default function TabsHome() {
-    return (
-        <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
-            <Text style={{ fontSize:18, fontWeight:'700' }}>Página inicial do professor</Text>
-        </View>
-    );
+export default function Index() {
+    return <Redirect href="/login" />;
 }

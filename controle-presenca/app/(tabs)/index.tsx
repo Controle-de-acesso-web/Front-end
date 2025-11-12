@@ -1,19 +1,19 @@
-import React from 'react';
+// app/(tabs)/index.tsx
 import { View, Text, Pressable } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
-export default function TabHome() {
+export default function TabsHome() {
     return (
-        <View style={{ flex:1, justifyContent:'center', alignItems:'center', gap:12, padding:16 }}>
-            <Text style={{ fontSize:18, fontWeight:'700' }}>Início</Text>
+        <View style={{ flex:1, justifyContent:'center', alignItems:'center', gap:12 }}>
+            <Text style={{ fontSize:18, fontWeight:'700' }}>Página inicial do professor</Text>
 
+            {/* botão de sair para testar o guard */}
             <Pressable
-                onPress={() => router.push('../auth/register')}
-                style={{ padding:12, backgroundColor:'#2f6fed', borderRadius:10 }}
+                onPress={async () => { await AsyncStorage.removeItem('token'); router.replace('/auth/login'); }}
+                style={{ padding:10, backgroundColor:'#eee', borderRadius:10 }}
             >
-                <Text style={{ color:'#fff', fontWeight:'700' }}>
-                    Cadastrar de Professor
-                </Text>
+                <Text>Sair</Text>
             </Pressable>
         </View>
     );
