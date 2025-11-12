@@ -1,17 +1,23 @@
+// app/(auth)/login.tsx
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { login } from '@/auth/session';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    function onLogin() {
-        // TODO: autenticar. Por enquanto:
-        if (email === 'admin@escola.com' && pass === 'admin123') {
-            router.replace('/admin');           // admin
-        } else {
-            router.replace('/');                // professor (tabs)
+    async function onLogin() {
+        try {
+            setLoading(true);
+            const session = await login(email.trim(), pass);
+            router.replace(session.role === 'admin' ? '/admin' : '/');
+        } catch (e) {
+            Alert.alert('Erro', 'Não foi possível entrar.');
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -19,11 +25,27 @@ export default function Login() {
         <View style={{ flex:1, justifyContent:'center', padding:16, gap:12 }}>
             <Text style={{ fontSize:22, fontWeight:'700', textAlign:'center' }}>Entrar</Text>
 
-            <TextInput placeholder="E-mail" autoCapitalize="none" style={s.input} value={email} onChangeText={setEmail} />
-            <TextInput placeholder="Senha" secureTextEntry style={s.input} value={pass} onChangeText={setPass} />
+            <TextInput
+                placeholder="E-mail"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={s.input}
+                value={email}
+                onChangeText={setEmail}
+            />
+            <TextInput
+                placeholder="Senha"
+                secureTextEntry
+                style={s.input}
+                value={pass}
+                onChangeText={setPass}
+            />
 
-            <Pressable onPress={onLogin} style={s.btn}><Text style={s.btnTxt}>Entrar</Text></Pressable>
+            <Pressable onPress={onLogin} disabled={loading} style={[s.btn, { opacity: loading ? 0.7 : 1 }]}>
+                <Text style={s.btnTxt}>{loading ? 'Entrando...' : 'Entrar'}</Text>
+            </Pressable>
 
+            {/* AQUI ESTÁ O AJUSTE */}
             <Pressable onPress={() => router.push('/register')}>
                 <Text style={{ textAlign:'center', color:'#2f6fed' }}>Não tem conta? Cadastre-se</Text>
             </Pressable>
