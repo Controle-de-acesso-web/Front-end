@@ -1,14 +1,29 @@
 import { api } from './client';
 import type { AttendanceStatus, ClassId, Student } from '@/types';
 
+type AttendanceDto = {
+    id: string;
+    date: string;
+    status: AttendanceStatus;
+    student: { id: string }; // vem aninhado no JSON do backend
+};
+
 export async function fetchStudentsByClass(classId: ClassId) {
-    return api.get<Student[]>(`/classes/${classId}/students`);
+    // GET /teacher/students?classId=A
+    return api.get<Student[]>(`/teacher/students?classId=${classId}`);
 }
 
 export async function fetchAttendanceForDate(classId: ClassId, dateISO: string) {
-    return api.get<Array<{ studentId: string; status: AttendanceStatus }>>(
-        `/classes/${classId}/attendance?date=${encodeURIComponent(dateISO)}`
+    // GET /teacher/attendance?classId=A&date=2025-11-13
+    const data = await api.get<AttendanceDto[]>(
+        `/teacher/attendance?classId=${classId}&date=${encodeURIComponent(dateISO)}`
     );
+
+    // converte para o formato que a tela espera: { studentId, status }
+    return data.map(a => ({
+        studentId: a.student.id,
+        status: a.status,
+    }));
 }
 
 export async function saveAttendanceBulk(
@@ -16,5 +31,10 @@ export async function saveAttendanceBulk(
     dateISO: string,
     items: Array<{ studentId: string; status: AttendanceStatus }>
 ) {
-    return api.post<void>(`/classes/${classId}/attendance`, { date: dateISO, items });
+    // PUT /teacher/attendance
+    await api.put<void>('/teacher/attendance', {
+        classId,
+        date: dateISO,
+        items,
+    });
 }

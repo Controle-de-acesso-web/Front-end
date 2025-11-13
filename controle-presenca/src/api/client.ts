@@ -1,21 +1,41 @@
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3333';
+// src/api/client.ts
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+type HttpMethod = 'GET' | 'POST' | 'PUT';
+
+async function request<T>(
+    method: HttpMethod,
+    path: string,
+    body?: unknown,
+    extraHeaders: Record<string, string> = {}
+): Promise<T> {
     const res = await fetch(`${BASE_URL}${path}`, {
-        headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-        ...init,
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            ...extraHeaders,
+        },
+        body: body == null ? undefined : JSON.stringify(body),
     });
+
     if (!res.ok) {
         const text = await res.text().catch(() => '');
-        throw new Error(`HTTP ${res.status} - ${text || res.statusText}`);
+        throw new Error(text || `HTTP ${res.status}`);
     }
+
+    // 204 No Content
+    if (res.status === 204) {
+        return undefined as unknown as T;
+    }
+
     return (await res.json()) as T;
 }
 
 export const api = {
-    get:  <T>(path: string) => request<T>(path),
-    post: <T>(path: string, body?: unknown) =>
-        request<T>(path, { method: 'POST', body: JSON.stringify(body ?? {}) }),
-    put:  <T>(path: string, body?: unknown) =>
-        request<T>(path, { method: 'PUT', body: JSON.stringify(body ?? {}) }),
+    get:  <T>(path: string, headers?: Record<string, string>) =>
+        request<T>('GET', path, undefined, headers),
+    post: <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
+        request<T>('POST', path, body, headers),
+    put:  <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
+        request<T>('PUT', path, body, headers),
 };

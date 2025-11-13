@@ -1,6 +1,6 @@
-// src/auth/session.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, UserRole, ClassId } from '@/types';
+import { api } from '@/api/client';
 
 const KEY = 'session';
 
@@ -14,27 +14,43 @@ export async function getRole(): Promise<UserRole | null> {
     return s?.role ?? null;
 }
 
-export async function login(email: string, pass: string): Promise<Session> {
-    // ADMIN "chumbado"
-    if (email === 'admin@escola.com' && pass === 'admin123') {
-        const s: Session = { token: 'admin-token', role: 'admin', email };
-        await AsyncStorage.setItem(KEY, JSON.stringify(s));
-        return s;
-    }
+type LoginApiResponse = {
+    id: string;
+    name: string;
+    role: string;    // vem "teacher" do backend
+    classId: ClassId;
+};
 
-    // Teacher mock (ex.: turma A)
-    if (pass.length >= 3) {
+export async function login(email: string, pass: string): Promise<Session> {
+    // 1) ADMIN "chumbado" (não passa pelo backend)
+    if (email === 'admin@escola.com' && pass === 'admin123') {
         const s: Session = {
-            token: 'teacher-token',
-            role: 'teacher',
+            token: 'admin',
+            role: 'admin',
             email,
-            classId: 'A' as ClassId,
+            name: 'Administrador',
         };
         await AsyncStorage.setItem(KEY, JSON.stringify(s));
         return s;
     }
 
-    throw new Error('Credenciais inválidas');
+    // 2) PROFESSOR -> chama a API /auth/login
+    const res = await api.post<LoginApiResponse>('/auth/login', {
+        email,
+        password: pass,
+    });
+
+    const s: Session = {
+        token: res.id,           // não temos JWT, então guardo o id só pra diferenciar
+        role: 'teacher',
+        email,
+        classId: res.classId,
+        teacherId: res.id,
+        name: res.name,
+    };
+
+    await AsyncStorage.setItem(KEY, JSON.stringify(s));
+    return s;
 }
 
 export async function clearSession() {

@@ -3,25 +3,20 @@ export type ClassId = 'A' | 'B' | 'C' | 'D';
 
 export type AttendanceStatus = 'P' | 'F' | 'T' | null;
 
-export type UserRole = 'admin' | 'teacher';
-
 export interface Student {
     id: string;
     name: string;
-    registration?: string;
+    registration?: string | null;
     classId: ClassId;
 }
 
-export interface AttendanceItem {
-    studentId: string;
-    status: AttendanceStatus;
-}
+export type UserRole = 'admin' | 'teacher';
 
 export interface Session {
-    token: string;
+    token: string;        // para admin é só um texto fixo; para professor usamos o id
     role: UserRole;
     email: string;
     name?: string;
-    /** turma do professor (apenas quando role === 'teacher') */
     classId?: ClassId;
+    teacherId?: string;
 }
