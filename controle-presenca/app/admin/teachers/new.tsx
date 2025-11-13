@@ -4,8 +4,7 @@ import { Stack, router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createTeacher } from '@/api/admin';
-
+import { api } from '@/api/client'; // 👈 ADICIONAR ISSO
 
 const CLASSES = ['A','B','C','D'] as const;
 const schema = z.object({
@@ -27,17 +26,13 @@ export default function NewTeacher() {
 
     async function onSubmit(data: FormData) {
         try {
-            await createTeacher({
-                name: data.name,
-                email: data.email,
-                password: data.password,
-                classId: data.classId,
-            });
+            // 👇 chama o back-end
+            await api.post('/admin/teachers', data);
 
             Alert.alert('Professor cadastrado', `${data.name} • Turma ${data.classId}`);
             router.back();
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error(err);
             Alert.alert('Erro', 'Não foi possível cadastrar o professor.');
         }
     }

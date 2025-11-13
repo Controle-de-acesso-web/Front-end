@@ -3,7 +3,7 @@ import { Stack, router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createStudent } from '@/api/admin';
+import { api } from '@/api/client'; // 👈 ADICIONAR
 
 const CLASSES = ['A','B','C','D'] as const;
 const schema = z.object({
@@ -23,20 +23,15 @@ export default function NewStudent() {
 
     async function onSubmit(data: FormData) {
         try {
-            await createStudent({
-                name: data.name,
-                registration: data.registration,
-                classId: data.classId,
-            });
+            await api.post('/admin/students', data);
 
             Alert.alert('Aluno cadastrado', `${data.name} • Turma ${data.classId}`);
             router.back();
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error(err);
             Alert.alert('Erro', 'Não foi possível cadastrar o aluno.');
         }
     }
-
 
     return (
         <>

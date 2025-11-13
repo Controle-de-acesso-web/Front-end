@@ -17,12 +17,12 @@ export async function getRole(): Promise<UserRole | null> {
 type LoginApiResponse = {
     id: string;
     name: string;
-    role: string;    // vem "teacher" do backend
+    role: string;    // "teacher"
     classId: ClassId;
 };
 
 export async function login(email: string, pass: string): Promise<Session> {
-    // 1) ADMIN "chumbado" (não passa pelo backend)
+    // 1) ADMIN fixo (sem backend)
     if (email === 'admin@escola.com' && pass === 'admin123') {
         const s: Session = {
             token: 'admin',
@@ -34,23 +34,28 @@ export async function login(email: string, pass: string): Promise<Session> {
         return s;
     }
 
-    // 2) PROFESSOR -> chama a API /auth/login
-    const res = await api.post<LoginApiResponse>('/auth/login', {
-        email,
-        password: pass,
-    });
+    // 2) PROFESSOR → backend
+    try {
+        const res = await api.post<LoginApiResponse>('/auth/login', {
+            email,
+            password: pass,
+        });
 
-    const s: Session = {
-        token: res.id,           // não temos JWT, então guardo o id só pra diferenciar
-        role: 'teacher',
-        email,
-        classId: res.classId,
-        teacherId: res.id,
-        name: res.name,
-    };
+        const s: Session = {
+            token: res.id,          // só pra ter algo
+            role: 'teacher',
+            email,
+            classId: res.classId,
+            teacherId: res.id,
+            name: res.name,
+        };
 
-    await AsyncStorage.setItem(KEY, JSON.stringify(s));
-    return s;
+        await AsyncStorage.setItem(KEY, JSON.stringify(s));
+        return s;
+    } catch (err) {
+        // aqui podemos melhorar depois, por enquanto uma mensagem simples
+        throw new Error('E-mail ou senha inválidos.');
+    }
 }
 
 export async function clearSession() {
