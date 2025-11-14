@@ -1,3 +1,4 @@
+// app/index.tsx
 import { useEffect, useState } from 'react';
 import { Redirect } from 'expo-router';
 import { getSession } from '@/auth/session';
@@ -10,6 +11,7 @@ export default function IndexGate() {
     useEffect(() => {
         (async () => {
             const s = await getSession();
+            console.log('🔎 IndexGate -> sessão:', s);
 
             if (!s) {
                 setTarget('/login');
@@ -23,5 +25,6 @@ export default function IndexGate() {
 
     if (target === 'loading') return null;
 
+    console.log('➡️ Redirecionando para:', target);
     return <Redirect href={target} />;
 }

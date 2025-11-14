@@ -1,12 +1,84 @@
+// src/auth/session.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, UserRole, ClassId } from '@/types';
 import { api } from '@/api/client';
 
 const KEY = 'session';
+const isWeb = typeof window !== 'undefined';
+
+// ---- helpers de persistência ----
+async function saveRaw(json: string) {
+    try {
+        await AsyncStorage.setItem(KEY, json);
+    } catch (err) {
+        console.log('⚠️ Erro salvando em AsyncStorage:', err);
+    }
+
+    if (isWeb) {
+        try {
+            window.localStorage.setItem(KEY, json);
+        } catch (err) {
+            console.log('⚠️ Erro salvando em localStorage:', err);
+        }
+    }
+}
+
+async function readRaw(): Promise<string | null> {
+    // 1) tenta AsyncStorage
+    try {
+        const raw = await AsyncStorage.getItem(KEY);
+        if (raw) return raw;
+    } catch (err) {
+        console.log('⚠️ Erro lendo AsyncStorage:', err);
+    }
+
+    // 2) fallback: localStorage
+    if (isWeb) {
+        try {
+            const rawWeb = window.localStorage.getItem(KEY);
+            if (rawWeb) return rawWeb;
+        } catch (err) {
+            console.log('⚠️ Erro lendo localStorage:', err);
+        }
+    }
+
+    return null;
+}
+
+async function clearRaw() {
+    try {
+        await AsyncStorage.removeItem(KEY);
+    } catch (err) {
+        console.log('⚠️ Erro removendo de AsyncStorage:', err);
+    }
+
+    if (isWeb) {
+        try {
+            window.localStorage.removeItem(KEY);
+        } catch (err) {
+            console.log('⚠️ Erro removendo de localStorage:', err);
+        }
+    }
+}
+
+// ---- API pública ----
 
 export async function getSession(): Promise<Session | null> {
-    const raw = await AsyncStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
+    const raw = await readRaw();
+    if (!raw) {
+        // console.log('🔎 getSession -> null');
+        return null;
+    }
+
+    try {
+        const s = JSON.parse(raw) as Session;
+        // console.log('🔎 getSession ->', s);
+        return s;
+    } catch (err) {
+        console.log('⚠️ Erro parseando sessão, limpando...', err);
+        await clearRaw();
+        return null;
+    }
 }
 
 export async function getRole(): Promise<UserRole | null> {
@@ -21,8 +93,13 @@ type LoginApiResponse = {
     classId: ClassId;
 };
 
+async function persistSession(s: Session) {
+    const json = JSON.stringify(s);
+    await saveRaw(json);
+}
+
 export async function login(email: string, pass: string): Promise<Session> {
-    // 1) ADMIN fixo (sem backend)
+    // 1) ADMIN fixo
     if (email === 'admin@escola.com' && pass === 'admin123') {
         const s: Session = {
             token: 'admin',
@@ -30,11 +107,11 @@ export async function login(email: string, pass: string): Promise<Session> {
             email,
             name: 'Administrador',
         };
-        await AsyncStorage.setItem(KEY, JSON.stringify(s));
+        await persistSession(s);
         return s;
     }
 
-    // 2) PROFESSOR → backend
+    // 2) PROFESSOR -> backend
     try {
         const res = await api.post<LoginApiResponse>('/auth/login', {
             email,
@@ -42,7 +119,7 @@ export async function login(email: string, pass: string): Promise<Session> {
         });
 
         const s: Session = {
-            token: res.id,          // só pra ter algo
+            token: res.id,
             role: 'teacher',
             email,
             classId: res.classId,
@@ -50,14 +127,13 @@ export async function login(email: string, pass: string): Promise<Session> {
             name: res.name,
         };
 
-        await AsyncStorage.setItem(KEY, JSON.stringify(s));
+        await persistSession(s);
         return s;
     } catch (err) {
-        // aqui podemos melhorar depois, por enquanto uma mensagem simples
         throw new Error('E-mail ou senha inválidos.');
     }
 }
 
 export async function clearSession() {
-    await AsyncStorage.removeItem(KEY);
+    await clearRaw();
 }

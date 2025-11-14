@@ -1,6 +1,8 @@
+// app/(tabs)/index.tsx
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, FlatList, Alert } from 'react-native';
-import { getSession } from '@/auth/session';
+import { router } from 'expo-router';
+import { getSession, clearSession } from '@/auth/session';
 import { fetchStudentsByClass, fetchAttendanceForDate, saveAttendanceBulk } from '@/api/attendance';
 import type { AttendanceStatus, ClassId, Student } from '@/types';
 
@@ -27,7 +29,9 @@ export default function TeacherAttendanceScreen() {
     useEffect(() => {
         (async () => {
             const s = await getSession();
-            if (s?.role === 'teacher' && s.classId) setClassId(s.classId);
+            if (s?.role === 'teacher' && s.classId) {
+                setClassId(s.classId);
+            }
         })();
     }, []);
 
@@ -63,7 +67,10 @@ export default function TeacherAttendanceScreen() {
     }, [students, marks]);
 
     function toggle(studentId: string) {
-        setMarks(prev => ({ ...prev, [studentId]: nextStatus(prev[studentId] ?? null) }));
+        setMarks(prev => ({
+            ...prev,
+            [studentId]: nextStatus(prev[studentId] ?? null),
+        }));
     }
 
     async function onSave() {
@@ -82,14 +89,34 @@ export default function TeacherAttendanceScreen() {
         }
     }
 
+    async function onLogout() {
+        await clearSession();
+        router.replace('/login');
+    }
+
     return (
         <View style={{ flex: 1, padding: 16, gap: 12 }}>
-            <View style={{ gap: 4 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700' }}>Turma {classId}</Text>
-                <Text style={{ color: '#666' }}>Data: {formatDateISO(date)}</Text>
-                <Text style={{ color: '#666' }}>
-                    Presente: {totals.P} • Falta: {totals.F} • Atraso: {totals.T} • Em branco: {totals.N}
-                </Text>
+            {/* Cabeçalho + botão sair */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                    <Text style={{ fontSize: 18, fontWeight: '700' }}>Turma {classId}</Text>
+                    <Text style={{ color: '#666' }}>Data: {formatDateISO(date)}</Text>
+                    <Text style={{ color: '#666' }}>
+                        Presente: {totals.P} • Falta: {totals.F} • Atraso: {totals.T} • Em branco: {totals.N}
+                    </Text>
+                </View>
+
+                <Pressable
+                    onPress={onLogout}
+                    style={{
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        borderRadius: 999,
+                        backgroundColor: '#999',
+                    }}
+                >
+                    <Text style={{ color: '#fff', fontWeight: '700' }}>Sair</Text>
+                </Pressable>
             </View>
 
             {loading ? (
@@ -102,20 +129,24 @@ export default function TeacherAttendanceScreen() {
                     renderItem={({ item }) => {
                         const st = marks[item.id] ?? null;
                         return (
-                            <View style={{
-                                padding: 12,
-                                borderRadius: 10,
-                                backgroundColor: '#fff',
-                                borderWidth: 1,
-                                borderColor: '#ddd',
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}>
+                            <View
+                                style={{
+                                    padding: 12,
+                                    borderRadius: 10,
+                                    backgroundColor: '#fff',
+                                    borderWidth: 1,
+                                    borderColor: '#ddd',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
                                 <View style={{ flexShrink: 1 }}>
                                     <Text style={{ fontWeight: '700' }}>{item.name}</Text>
                                     {item.registration ? (
-                                        <Text style={{ color: '#666', fontSize: 12 }}>Matrícula: {item.registration}</Text>
+                                        <Text style={{ color: '#666', fontSize: 12 }}>
+                                            Matrícula: {item.registration}
+                                        </Text>
                                     ) : null}
                                 </View>
 
@@ -128,10 +159,12 @@ export default function TeacherAttendanceScreen() {
                                         st === 'T' && chip.atraso,
                                     ]}
                                 >
-                                    <Text style={[
-                                        chip.textBase,
-                                        (st === 'P' || st === 'F' || st === 'T') && chip.textActive,
-                                    ]}>
+                                    <Text
+                                        style={[
+                                            chip.textBase,
+                                            (st === 'P' || st === 'F' || st === 'T') && chip.textActive,
+                                        ]}
+                                    >
                                         {st ?? '—'}
                                     </Text>
                                 </Pressable>
