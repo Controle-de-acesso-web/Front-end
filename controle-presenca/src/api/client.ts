@@ -9,6 +9,14 @@ async function request<T>(
     body?: unknown,
     extraHeaders: Record<string, string> = {}
 ): Promise<T> {
+
+    // 🔍 AQUI! Coloque este console.log
+    console.log('📡 FETCH =>', `${BASE_URL}${path}`, {
+        method,
+        body,
+        headers: extraHeaders,
+    });
+
     const res = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
@@ -20,10 +28,10 @@ async function request<T>(
 
     if (!res.ok) {
         const text = await res.text().catch(() => '');
+        console.log('❌ ERRO DO FETCH:', res.status, text);
         throw new Error(text || `HTTP ${res.status}`);
     }
 
-    // 204 No Content
     if (res.status === 204) {
         return undefined as unknown as T;
     }

@@ -1,3 +1,4 @@
+// app/(tabs)/_layout.tsx
 import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { getRole } from '@/auth/session';
@@ -16,9 +17,14 @@ export default function TabsLayout() {
     }, []);
 
     if (!ready) return null;
+
+    // se for admin e cair aqui por algum motivo, manda pra área de admin
     if (role === 'admin') return <Redirect href="/admin" />;
+
+    // se não for professor, volta pro login
     if (role !== 'teacher') return <Redirect href="/login" />;
 
+    // professor logado → tabs normais
     return (
         <Tabs>
             <Tabs.Screen name="index"   options={{ title: 'Presença' }} />
